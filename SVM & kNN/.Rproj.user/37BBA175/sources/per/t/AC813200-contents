@@ -1,0 +1,44 @@
+library(readr)
+library(kernlab)
+library(ggplot2)
+library(kknn)
+
+data <- as.matrix(read.delim("credit_card_data-headers.txt"))
+
+model_ksvm <- function(data,lambda){
+  #x= training data (columns 1 to 10) 
+  #y= response vector (R1 column)
+  model <- ksvm(data[,1:10],data[,11],type="C-svc",kernel="vanilladot",C=lambda,scaled=TRUE)
+  
+  #calculate a and a0
+  a <- colSums(model@xmatrix[[1]] * model@coef[[1]])
+  a0 <- -model@b
+  print(a)
+  print(a0)
+  
+  #see what the model predicts
+  pred <- predict(model,data[,1:10])
+  
+  #calculate percent of predictions that match the actual results
+  accuracy <- sum(pred == data[,11]) / nrow(data)
+  return(accuracy)
+}
+
+print(model_ksvm(data,0.0014))
+
+
+lambda = 0.001
+lambdas = c()
+accuracy = c()
+
+for(i in 1:300){
+  lambda = lambda*1.2
+  lambdas = append(lambdas,lambda)
+  accuracy = append(accuracy,classify(data,lambda))
+}
+
+lambda_results <- data.frame(c=lambdas, accuracy=accuracy)
+print(lambda_results)
+
+plot <- ggplot(data=lambda_results) + geom_step(mapping=aes(x=lambdas,y=accuracy))
+print(plot)

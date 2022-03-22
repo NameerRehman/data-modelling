@@ -1,0 +1,65 @@
+---
+title: "HW6"
+output: html_document
+---
+
+We start off with conducting PCA on our data and plotting the results to see where we see the dropoff in variance captured. Looking at the elbow diagram, 4 principle components seems to be a good option. 
+
+We then build a linear regression model using the 4 PCs. This lr model has a r squared of 0.309 and adjusted r-squared of 0.243 which is considerably lower than last weeks model. 
+
+To predict the crime rate, we unrotate our PCs and unscale. This allows us to express the coefficients in original terms. Plugging the test point in from last week we get predicted crime rate of 1113. 
+
+Again, PCA in this case does not seem to yield as good results as last weeks analysis. 
+
+
+```{r Q9.1}
+data <- read.table('uscrime.txt',stringsAsFactors = FALSE,header = TRUE)
+
+pca <- prcomp(data[,1:15], scale=TRUE)
+summary(pca)
+
+#plot the variances for the PCA to find number of PCs to use
+plot(pca,type='line')
+
+#get first 4 PC
+#returns 4x47 matrix (4 PCs, 47 data pts)
+pc <- pca$x[,1:4]
+
+#add response variable (Crime) to build lrm 
+data_pc <- cbind(pc,data[,16]) 
+colnames(data_pc)[5] <- "Crime"
+
+#build lrm 
+lrm <- lm(Crime~.,data=as.data.frame(data_pc))
+summary(lrm)
+
+#extract intercept and coefficients
+intercept <- lrm$coefficients[1]
+coeff <- lrm$coefficients[2:5]
+
+#express model as original variables (i.e unrotate data) -> multiply coefficients 
+#by transpose of rotation matrix, using only the 4 principle components we chose 
+#pca$rotation[,1:4] gives a 4x15 matrix containing only our 4 chosen PCs
+lrm_unrot <- coeff %*% t(pca$rotation[,1:4])
+
+#descale coefficients and intercept
+lrm_descale <- data.frame(lrm_unrot/pca$scale)
+intercept_descale <- intercept - sum(lrm_unrot*pca$center/pca$scale)
+
+#manually calculate linear regression model prediction results with descaled lrm coefficients 
+#y = a0 + a1x1 +a2x2 ...
+result <- intercept_descale + (as.matrix(data[,1:15]) %*% t(lrm_descale))
+
+#calculate r-squared using r^2 = = 1 - SSEresidual/SSEtotal
+SSEtotal <- sum((data$Crime - mean(data$Crime))^2)
+SSEres <- sum((data$Crime - result)^2) #SSEres=sum(known response-predicted response)^2
+
+r <- 1- SSEres/SSEtotal
+
+test_pt <- data.frame(M = 14.0,So = 0, Ed = 10.0, Po1 = 12.0, Po2 = 15.5,LF = 0.640, M.F = 94.0, Pop = 150, NW = 1.1, U1 = 0.120, U2 = 3.6, Wealth = 3200, Ineq = 20.1, Prob = 0.04,Time = 39.0)
+
+prediction <- intercept_descale + (as.matrix(test_pt) %*% t(lrm_descale))
+  
+
+```
+

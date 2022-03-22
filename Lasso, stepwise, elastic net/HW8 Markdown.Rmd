@@ -1,0 +1,148 @@
+---
+title: "HW8"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
+
+```{r Q11.1 Part 1-1,message = FALSE}
+data <- read.table("uscrime.txt",header = TRUE)
+
+
+#-------backwards selection-------------- 
+lrm_full <- lm(Crime~., data = data)
+
+#can add parameter trace=0 to remove output including every step
+step(lrm_full,
+     direction="backward",trace = 0)
+
+
+#-------forwards selection-------------- 
+#Crime~1 gives just the intercept
+lrm_empty <- lm(Crime~1, data = data)
+
+#scope allows you to include certain variables that must be part of the model
+step(lrm_empty, 
+     scope = formula(lm(Crime~.,data=data)),
+     direction="forward",
+     trace = 0)
+
+#-------stepwise regression-------------- 
+#specify upper and lower bound
+step_reg <- step(lrm_full, 
+                scope = list(lower = formula(lm(Crime~1,data=data)),
+                upper = formula(lm(Crime~.,data=data))),
+                direction="both",
+                )
+step_reg
+```
+
+This gives the following coefficients: M + Ed + Po1 + M.F + U1 + U2 + Ineq + Prob
+
+
+```{r Q11.1 Part 1-2, message = FALSE}
+
+# do 5-fold cross-validation using these coefficients
+library(DAAG)
+lrm_step <- lm(Crime ~ M + Ed + Po1 + M.F + U1 + U2 + Ineq + Prob,data = data) # fit model
+cv_lrm_step <- cv.lm(data,lrm_step,m=5) # cross-validate 
+r2_step <- 1 - attr(cv_lrm_step,"ms")*nrow(data)/sum((data$Crime - mean(data$Crime))^2) # calculate R-squared
+
+```
+
+This gives a 0.586 r2 value. 
+Next we try LASSO  
+
+```{r Q11.1 Part 2-1, message = FALSE}
+#-------LASSO-------------- 
+library(glmnet)
+set.seed(12)
+
+lasso_model <- cv.glmnet(x=as.matrix(data[,-16]),
+                         y=as.matrix(data[,16]),
+                         alpha=1, #this is lambda in lectures. 1 corresponds to a lasso model
+                         nfolds=8,
+                         nlambda=20, #the threshold
+                         type.measure='mse', #mean squared model
+                         family='gaussian', #because its linear regression model
+                         standardize=TRUE) #scale data 
+                         
+plot(lasso_model)
+lasso_model$lambda.min
+cbind(lasso_model$lambda,lasso_model$cvm,lasso_model$nzero)
+
+#return coefficients that correspond the lambda value of lambda.min
+coef(lasso_model,s=lasso_model$lambda.min)
+
+```
+
+
+LASSO gives the following coefficients: M + So + Ed + Po1 + M.F + NW + U1 + U2 + Wealth + Ineq + Prob
+
+```{r Q11.1 Part 2-2}
+
+# do 5-fold cross-validation using these coefficients
+library(DAAG)
+lrm_lasso <- lm(Crime ~ M+So+Ed+Po1+M.F+NW+U1+U2+Wealth+Ineq+Prob,data = data) # fit model
+cv_lrm_lasso <- cv.lm(data,lrm_lasso,m=5) # cross-validate 
+r2_lasso <- 1 - attr(cv_lrm_lasso,"ms")*nrow(data)/sum((data$Crime - mean(data$Crime))^2) # calculate R-squared
+
+```
+
+This gives a 0.569 r2 value. 
+However So, NW, Wealth, and M.F all have high P values. Removing these and recalculating gives us r2 of 0.614:
+
+```{r Q11.1 Part 2-3}
+
+# do 5-fold cross-validation using these coefficients
+library(DAAG)
+lrm_lasso <- lm(Crime ~ M+Ed+Po1+U1+U2+Ineq+Prob,data = data) # fit model
+cv_lrm_lasso <- cv.lm(data,lrm_lasso,m=5) # cross-validate 
+r2_lasso <- 1 - attr(cv_lrm_lasso,"ms")*nrow(data)/sum((data$Crime - mean(data$Crime))^2) # calculate R-squared
+
+```
+
+Try Elastic Net using alpha values ranging from 0.1 to 0.9
+
+```{r Q11.1 Part 3-1}
+#Elastic net - test different values of alpha. For each alpha find best value for lambda to get best model
+
+#-------Elastic Net-------------- 
+
+for(i in list(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)){
+  en_model <- cv.glmnet(x=as.matrix(data[,-16]),
+                           y=as.matrix(data[,16]),
+                           alpha=i, #lambda in lectures. any value between 0 & 1 is elastic net
+                           nfolds=8,
+                           nlambda=20, #T in lectures (threshold)
+                           type.measure='mse', #mean squared model
+                           family='gaussian', #because its linear regression model
+                           standardize=TRUE) #scale data 
+  
+  print(min(en_model$cvm))
+}
+```
+
+0.4 is best value of alpha out of this range, this corresponds with M+So+Ed+Po1+Po2+LF+M.F+NW+U2+Ineq+Prob
+
+```{r Q11.1 Part 3-2}
+
+# do 5-fold cross-validation using these coefficients
+library(DAAG)
+lrm_en <- lm(Crime ~ M+So+Ed+Po1+Po2+LF+M.F+NW+U2+Ineq+Prob,data = data) # fit model
+cv_lrm_en <- cv.lm(data,lrm_en,m=5) # cross-validate 
+r2_en <- 1 - attr(cv_lrm_en,"ms")*nrow(data)/sum((data$Crime - mean(data$Crime))^2) # calculate R-squared
+
+                         
+```
+This gives a 0.526 r2 which is lower than previous stepwise and lasso. Removing the factors with high p values would give us the same factors as what we got with stepwise regression. 
+
+
+

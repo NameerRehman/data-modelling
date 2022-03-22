@@ -1,0 +1,54 @@
+---
+title: "HW4"
+output: word_document
+---
+
+```{r Q7.2}
+data <- read.table('temps.txt', header=TRUE, row.names=1)
+
+#unrwaps df into one long vector
+b <- unlist(data)
+
+plot(b)
+
+#convert to time series
+#repeat after frequency 123 (123 days before year changes)
+data_ts <- ts(b,start=1996, frequency=123)
+
+#decompose uses moving average to assess trend & overall seasonality by averaging it over all periods
+#Good for exploratory data analysis to see trends/seasonalities
+#it tells you there is seasonality but does not tell you how seasonality is isolated to a particular #period
+plot(decompose(data_ts))
+  
+holtwinter <- function(a,b,g,seasonal){
+
+  hw <- HoltWinters(data_ts,alpha=a,beta=b,gamma=g,seasonal=seasonal)
+  print(hw)
+  plot(hw)
+  
+  plot(hw$fitted)
+  
+  #print squared error
+  cat("error: ",hw$SSE)
+  
+  return(hw$fitted)
+}
+
+hw_abg <- holtwinter(NULL,NULL,NULL,"multiplicative")
+
+hw_ag <- holtwinter(NULL,FALSE,NULL,"multiplicative")
+
+hw_ag_add <- holtwinter(NULL,FALSE,NULL,"additive")
+
+
+#we pick hw_ag as there is no trend component in the temps data, but there is a seasonal component
+#Extract xhat (the predicted value at time t) & seasonal data
+#convert data back to rows and columns using our chosen Holtwinter model
+xhat <- matrix(hw_ag[,1],nrow=123)
+season <- matrix(hw_ag[,3],nrow=123) 
+
+#return xhat - predicted value at time t 
+write.csv(xhat,file="temp_xhat.csv")
+write.csv(season,file="temp_season.csv")
+```
+

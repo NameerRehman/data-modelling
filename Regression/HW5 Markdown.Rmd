@@ -1,0 +1,49 @@
+---
+title: "HW5"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Using all predictors we get an adjusted r-squared value of 0.7078, which predicts 155 as Crime which does not seem reasonable. 
+
+Running the model again with predictors with p-value 0.05 or less, and using some trial and error by including and excluding values close to 0.05, we get adjusted r-squared of 0.7307 using the following formula: Crime~M+Ed+U2+Ineq+Prob+Po1. 
+
+Looking at the cross-validated results, we get a much bigger drop off using all 15 attributes, but a much lower drop-off with the 6 attributes mentioned above. These 6 attributes predict a crime rate of 1304.
+
+```{r Q8.2}
+data <- read.table('uscrime.txt', header = TRUE)
+
+library(corrplot)
+corrplot(cor(data))
+
+lm1 <- lm(Crime~., data = data)
+summary(lm1)
+plot(lm1)
+
+test_pt <-data.frame(M = 14.0,So = 0, Ed = 10.0, Po1 = 12.0, Po2 = 15.5,LF = 0.640, M.F = 94.0, Pop = 150, NW = 1.1, U1 = 0.120, U2 = 3.6, Wealth = 3200, Ineq = 20.1, Prob = 0.04,Time = 39.0)
+
+result1 <- predict(lm1,test_pt)
+
+#keep only the attributes with p-value 0.05 or less
+lm2 <- lm(Crime~M+Ed+U2+Ineq+Prob+Po1, data=data)
+summary(lm2)
+result2 <- predict(lm2,test_pt)
+
+#check model quality with cross validation
+library("DAAG")
+
+set.seed(12)
+cv1 <- cv.lm(data,lm1,m=4)
+
+#calculate r-squared using r^2 = = 1 - SSEresidual/SSEtotal
+SSEtotal <- sum((data$Crime - mean(data$Crime))^2)
+
+SSEres1 <- attr(cv1,"ms")*nrow(data)
+
+r_lm2_cv <- 1- SSEres1/SSEtotal
+r_lm2_cv
+
+```

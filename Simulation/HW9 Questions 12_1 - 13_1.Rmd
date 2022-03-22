@@ -1,0 +1,39 @@
+---
+title: "HW9"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Question 12.1
+I work at a packaging automation company that designs and manufactures machines. A design of experiments would be useful to determine. Certain parameters and attributes on the machine can increase or reduce reject rate and down time. We can compare which product variation gives us the best results by controlling for other factors and seeing the effect of say the glue temperature on the glue applicator to determine which product variations gives the least rejects.   
+
+
+
+Question 12.2
+We set number of runs to 16 and factors to 10 to get the desired results 
+
+```{r Q12.1, warning=FALSE, message=FALSE}
+library(FrF2)
+set.seed(12)
+FrF2(nruns=16,nfactors=10)
+```
+
+
+
+Question 13.1
+
+Binomial: If we make n spins of russian roullette and bet red every time, how many wins can we get
+
+Geometric: How many free throw shots made by a basketball player before their first miss. This data can be used for sports betting  
+
+Poisson: Number of return requests that come in per day to Amazon 
+
+Exponential: Time between test drive requests at a dealership - can help dealership determine how many cars to keep in stock 
+
+Weibull: Amount of runtime until bearing starts failing on a conveyor system & needs to be replaced 
+
+
+

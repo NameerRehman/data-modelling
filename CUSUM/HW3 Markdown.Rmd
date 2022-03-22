@@ -1,0 +1,60 @@
+---
+title: "HW3 Markdown"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r Q5.1}
+library(outliers)
+data <- read.table('uscrime.txt',header=TRUE)
+
+plot(data$Crime)
+
+#index in this case doesnt really mean anything, so lets try another view
+plot(data.frame(data$Crime))
+
+boxplot(data$Crime)
+
+#default type=10 (test for one outlier)
+grubbs.test(data$Crime)
+
+#type=11 (test for two outliers on opposite tails)
+grubbs.test(data$Crime,type=11)
+
+
+
+```
+
+
+```{r Q6.2, echo=FALSE}
+data <- read.table('temps.txt',header = TRUE)
+
+changedf <- data.frame(matrix(NA,ncol=1, nrow = 123))
+
+for(i in 2:21){
+  u <- mean(data[,i])
+  change <- data[,i]-u
+  changedf[paste("col",toString(i))] <- change
+}
+
+#drop first col in df that was a placeholder
+changedf <- changedf[-1]
+
+stdf <- data.frame(matrix(NA,ncol=21,nrow=123))
+St <- 0
+
+for(j in 1:21){
+  for(i in 2:123){
+    St <- max(0,changedf[i,j]+St)
+    stdf[i,j] <- St 
+  }
+}
+
+```

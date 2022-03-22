@@ -1,0 +1,107 @@
+---
+title: "HW1"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Question 2.2.1
+
+```{r ksvm, message=FALSE, warning=FALSE}
+library(readr)
+library(kernlab)
+library(ggplot2)
+library(kknn)
+
+data <- as.matrix(read.delim("credit_card_data-headers.txt"))
+
+model_ksvm <- function(data,lambda){
+  #x= training data (columns 1 to 10) 
+  #y= response vector (R1 column)
+  model <- ksvm(data[,1:10],data[,11],type="C-svc",kernel="vanilladot",C=lambda,scaled=TRUE)
+  
+  #or model <- ksvm(R1.~,data=data,type="C-svc"...)
+  
+  #calculate a and a0
+  a <- colSums(model@xmatrix[[1]] * model@coef[[1]])
+  a0 <- -model@b
+  
+  #see what the model predicts
+  pred <- predict(model,data[,1:10])
+  
+  #calculate percent of predictions that match the actual results
+  accuracy <- (sum(pred == data[,11]) / nrow(data))*100
+  return(accuracy)
+}
+
+#setup empty vectors to record results
+lambdas = c()
+accuracy = c()
+
+#set C value start point
+lambda = 0.0001
+
+#test incrementing c values and record results
+for(i in 1:30){
+  lambda = lambda*1.5
+  lambdas = append(lambdas,lambda)
+  accuracy = append(accuracy,model_ksvm(data,lambda))
+}
+
+lambda_results <- data.frame(c=lambdas, accuracy=accuracy)
+print(lambda_results)
+
+```
+
+
+2.2.2
+
+rbfdot and laplacedot kernels surprisingly gave 100% prediction accuracy, with accuracy rising as C increases
+rbfdot -> C=2216837		100%
+laplacedot -> C=85    100%
+
+
+2.2.3 
+
+```{r kknn, message=FALSE, warning=FALSE}
+library(readr)
+library(kernlab)
+library(ggplot2)
+library(kknn)
+
+data <- data.frame(read.delim("credit_card_data-headers.txt"))
+
+#setup empty df to record accuracies
+accuracies <- data.frame(k=c(),accuracy=c())
+
+for(k_val in 1:30){
+  #setup empty vector to record predictions
+  results = c()
+  
+  #R1~. is the formula notation. "." in formulas means "everything else"
+  #So R1~. means "R1 is a function of everything else"
+  #This identifies R1 as the response, so you can pass entire df w/out splitting columns like we did in ksvm
+  for(i in 1:dim(data)[1]){
+    model <- kknn(R1 ~ .,data[-i,],data[i,],k=k_val, scale=TRUE)
+    result = model$fitted.values
+
+    #append rounded result to vector
+    results <- c(results,round(result))
+  }
+
+  #create df to store k-value and associated prediction accuracy
+  accuracy <- data.frame(k_val,sum(results == data[,11]) / nrow(data))
+  
+  #append accuracy df to accuracies df
+  accuracies <- rbind(accuracies,accuracy)
+}
+
+print(accuracies) 
+
+```
+
+
