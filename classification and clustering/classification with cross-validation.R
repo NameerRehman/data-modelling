@@ -1,26 +1,11 @@
----
-output:
-  word_document: default
-  html_document: default
----
- ---
-title: "HW2"
-output: html_document
----
 
+# split data into 80% training and validation, and 20% testing. I then used k-fold cross validation with a k-value of 4, with data being split up using sampling and set.seed for reproducible pseudo-random data. 
+# Using k-nearest neighbors, I coded out the individual steps of cross validation and found a k value of 6 to produce the highest prediction accuracy of 84.92366%	
+# 
+# If we do not do a set.seed, we can see there is quite a bit of variation in model performance from run-to-run as the random sampling changes, which shows there is a relatively high amount of random patterns in the data.
+# 
+# When testing this model on our test set, we get an accuracy of 83.07692%. Again, the slightly lower prediction accuracy on the test set is not surprising due to the random patterns in the data. 
 
-
-Question 3.1 (a)
-
-I split my data into 80% training and validation, and 20% testing. I then used k-fold cross validation with a k-value of 4, with data being split up using sampling and set.seed for reproducible pseudo-random data. 
-Using k-nearest neighbors, I coded out the individual steps of cross validation and found a k value of 6 to produce the highest prediction accuracy of 84.92366%	
-
-If we do not do a set.seed, we can see there is quite a bit of variation in model performance from run-to-run as the random sampling changes, which shows there is a relatively high amount of random patterns in the data.
-
-When testing this model on our test set, we get an accuracy of 83.07692%. Again, the slightly lower prediction accuracy on the test set is not surprising due to the random patterns in the data. 
-
-
-```{r 3.1a, message=FALSE, warning=FALSE}
 library(kernlab)
 library(kknn)
 library(dplyr)
@@ -53,9 +38,9 @@ for(i in 1:k){
   set.seed(1)
   s <- sample(nrow(unsampled),set_size)
   set <- unsampled[s,]
-
+  
   sets[[i]] <- set
-
+  
   #update df of utilized data with recently created set
   sampled <- rbind.data.frame(sampled,set)
 }
@@ -96,15 +81,12 @@ result <- round(model$fitted.values)
 accuracy <- sum(result == test[,11])/nrow(test)
 print(accuracy)
 
-```
 
 
 
-Question 3.1 (b)
+# 
+# Using a 60/20/20 split of train/validate/test to choose and test a kknn model, we find a k-value of 10, 11, or 12 to yield the best results of 87.02290%, again with a high variability in between runs. On the test set, this results in an accuracy of 84.61538%. 
 
-Using a 60/20/20 split of train/validate/test to choose and test a kknn model, we find a k-value of 10, 11, or 12 to yield the best results of 87.02290%, again with a high variability in between runs. On the test set, this results in an accuracy of 84.61538%. 
-
-```{r 3.1b, message=FALSE, warning=FALSE}
 library(kernlab)
 library(kknn)
 library(dplyr)
@@ -129,7 +111,7 @@ accuracies <- data.frame(k=c(),accuracy=c())
 for(i in 5:20){
   model <- kknn(V11~.,train,val,k=i,kernel='optimal',scale=TRUE)
   result <- round(model$fitted.values)
-
+  
   #append accuracies
   accuracy <- data.frame(i,sum(result == val[,11])/nrow(val))
   accuracies <- rbind(accuracies,accuracy)
@@ -143,23 +125,18 @@ model <- kknn(V11~.,train,test,k=12,kernel='optimal',scale=TRUE)
 result2 <- round(model$fitted.values)
 print(sum(result2 == test[,11])/nrow(test))
 
-```
 
-Question 4.2
-
-I looped through various k values and different combinations of predictor columns (where 1=column1 in the iris dataset, 2=column2 etc.)
-
-To measure how each kmeans algorithm performed, I chose the tot.withinss distance metric as it matches the formula provided in class for minimizing distance between clusters and their data points.
-
-Looking at our distance-clusters graphs, k=3 seems to consistently show where the kink starts, meaning it is the best k to choose before we see diminishing returns. 
-
-Looking at our "k vs distance vs predictors" graph, we see relationship between columns 2,4 seems to fair the best with minimum distance given any number of clusters. 
-
-Then, looking at the different predictor combinations that include both columns 2 and 4, we have [2,4] or [2,3,4]. 
+# I looped through various k values and different combinations of predictor columns (where 1=column1 in the iris dataset, 2=column2 etc.)
+# 
+# To measure how each kmeans algorithm performed, I chose the tot.withinss distance metric as it matches the formula provided in class for minimizing distance between clusters and their data points.
+# 
+# Looking at our distance-clusters graphs, k=3 seems to consistently show where the kink starts, meaning it is the best k to choose before we see diminishing returns. 
+# 
+# Looking at our "k vs distance vs predictors" graph, we see relationship between columns 2,4 seems to fair the best with minimum distance given any number of clusters. 
+# 
+# Then, looking at the different predictor combinations that include both columns 2 and 4, we have [2,4] or [2,3,4]. 
 
 
-
-```{r b, message=FALSE, warning=FALSE}
 library(datasets)
 library(ggplot2)
 library(dplyr)
@@ -168,7 +145,7 @@ data <- iris[,-5]
 
 ks <- c(2,3,4,5,6,7)
 predictors <- list(c(1,2),c(1,3),c(1,4),c(2,3),c(2,4),c(3,4))
-                   #c(1,2,3,4), c(1,2,3),c(1,2,4),c(1,3,4),c(2,3,4))
+#c(1,2,3,4), c(1,2,3),c(1,2,4),c(1,3,4),c(2,3,4))
 
 df <- data.frame(predictors=c(),k=c(),distance=c())
 
@@ -202,8 +179,8 @@ iris$result <- cl2$cluster
 
 #count occurence of each flower in each cluster
 for(i in 1:3){
- count <- iris[,5:6] %>% filter(result==i)
- print(summary(count)) 
+  count <- iris[,5:6] %>% filter(result==i)
+  print(summary(count)) 
 }
 
 #Test cluster performance- with columns 2,3,4 as predicto------------------------
@@ -214,10 +191,7 @@ iris$result <- cl2$cluster
 
 #count occurence of each flower in each cluster
 for(i in 1:3){
- count <- iris[,5:6] %>% filter(result==i)
- print(summary(count)) 
+  count <- iris[,5:6] %>% filter(result==i)
+  print(summary(count)) 
 }
 
-
-
-```
